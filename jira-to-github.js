@@ -23,7 +23,7 @@ github.authenticate({
 
 function html_time(dt){
 	var m = moment(dt);
-	return '<time datetime="' + m.toISOString() + '">' + m.utc().format('Do MMMM YYYY, H:mm:ss') + '</time>';
+	return '<time datetime="' + m.toISOString() + '" title="' + m.toISOString() + '">' + m.utc().format('Do MMMM YYYY, H:mm:ss') + '</time>';
 }
 
 function markdown_quote(text) {
@@ -49,7 +49,7 @@ jira.searchJira(config.jira.jql,
 
 		labels.push('t: ' + issue.fields.issuetype.name);
 
-		var body = '**' + issue.fields.reporter.displayName + '** created ' + issue.fields.issuetype.name + ' — ' + html_time(issue.fields.created) + ':\r\n' +
+		var body = '**' + issue.fields.reporter.displayName + '** created an issue — ' + html_time(issue.fields.created) + ':\r\n' +
 				markdown_quote(J2M.toM(issue.fields.description || ''));
 
 		(issue.fields.comment.comments || []).forEach(function (comment) {
