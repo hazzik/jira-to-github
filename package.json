@@ -1,0 +1,26 @@
+{
+  "name": "jira-to-github",
+  "version": "1.0.0",
+  "description": "JIRA to GitHub issues converter ===============================",
+  "main": "jira-to-github.js",
+  "dependencies": {
+    "github": "^9.2.0",
+    "j2m": "github:hazzik/j2m#patch-1",
+    "jira": "^0.9.2",
+    "moment": "^2.18.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hazzik/jira-to-github.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hazzik/jira-to-github/issues"
+  },
+  "homepage": "https://github.com/hazzik/jira-to-github#readme"
+}

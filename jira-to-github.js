@@ -1,5 +1,8 @@
 var JiraApi = require('jira').JiraApi;
 var GitHubApi = require('github');
+var J2M = require('J2M');
+var moment = require('moment');
+
 //var util = require('util');
 
 // The GitHub API handles concurrent inserts really badly
@@ -18,75 +21,60 @@ github.authenticate({
     password: config.github.password
 });
 
+function html_time(dt){
+	var m = moment(dt);
+	return '<time datetime="' + m.toISOString() + '">' + m.utc().format('Do MMMM YYYY, H:mm:ss') + '</time>';
+}
+
+function markdown_quote(text) {
+	return text.split(/\r?\n/).map(function(line){
+			return '> ' + line;
+	}).join('\r\n')
+};
+
 jira.searchJira(config.jira.jql, 
 		{ 	
-			maxResults: 9999, 
-			fields: [ 'summary', 'description', 'priority', 'components', 'issuetype' ] 
+			maxResults: 10, 
+			fields: [ 'summary', 'description', 'priority', 'components', 'issuetype', 'comment', 'reporter', 'created' ] 
 		}, function(error, result) {
 
 	result.issues.forEach(function(issue) {
+		var labels = [];
 
-		labels = [];
-
-		if([ 'Blocker', 'Critical' ].indexOf(issue.fields.priority.name) >= 0)
-			labels.push( 'prio:high' );
+		labels.push('p: '+ issue.fields.priority.name);
 
 		issue.fields.components.forEach(function(component) {
-			switch(component.name) {
-			  case 'API':
-				labels.push( 'comp:api' );
-				break;
-			  case 'Back end general':
-				labels.push( 'comp:backend' );
-				break;
-			  case 'Build process':
-				labels.push( 'comp:build-process' );
-				break;
-			  case 'Datasource: S+':
-				labels.push( 'comp:datasource-syllabus' );
-				break;
-			  case 'Documentation':
-				labels.push( 'comp:documentation' );
-				break;
-			  case 'Front end / GWT':
-				labels.push( 'comp:gwt' );
-				break;
-			  case 'Help':
-				labels.push( 'comp:help' );
-				break;
-			  case 'Mobile':
-				labels.push( 'comp:mobile' );
-				break;
-			}
+				labels.push('c: '+ component.name);
 		});
 
-		switch(issue.fields.issuetype.name) {
-		  case 'Bug':
-			labels.push( 'type:bug' );
-			break;
-		  case 'Improvement':
-			labels.push( 'type:enhancement' );
-			break;
-		  case 'New Feature':
-			labels.push( 'type:feature' );
-			break;
-		  case 'Task':
-			labels.push( 'type:task' );
-			break;
+		labels.push('t: ' + issue.fields.issuetype.name);
 
-		}
+		var body = '**' + issue.fields.reporter.displayName + '** created ' + issue.fields.issuetype.name + ' — ' + html_time(issue.fields.created) + ':\r\n' +
+				markdown_quote(J2M.toM(issue.fields.description || ''));
+
+		(issue.fields.comment.comments || []).forEach(function (comment) {
+				body += '\r\n---\r\n';
+				body += '**' + comment.author.displayName + '** added a comment — ' + html_time(comment.created) + ':\r\n';
+				body += markdown_quote(J2M.toM(comment.body));
+		});
+
+		//console.log(issue);
+		//console.log(issue.fields.comment.comments);
 
 		github.issues.create({
-		user: config.github.repouser,
-		repo: config.github.reponame, 
-		title: issue.fields.summary,
-		body: issue.fields.description,
-		labels: labels
-		} , function(err, res) { 
-			if(err)
-				console.log("Error creating issue: " + issue.fields.summary);
+			owner: config.github.repouser,
+			repo: config.github.reponame, 
+			title: issue.key + ' - ' + issue.fields.summary,
+			body: body,
+			labels: labels
+		}, 
+		function(err, res) { 
+			if(err) {
+					console.log(err);
+					console.log("Error creating issue: " + issue.key + ' - ' + issue.fields.summary);
+			}
 			else
-				console.log("Created issue: " + issue.fields.summary);
+				console.log("Created issue: " + issue.key + ' - ' + issue.fields.summary);
 		})
 
 		//console.log(util.inspect(issue, false, null));
